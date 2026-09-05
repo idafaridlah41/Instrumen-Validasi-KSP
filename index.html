@@ -1,0 +1,1617 @@
+<!-- Chosen Palette: Dark Slate & Electric Indigo Neutral (Slate background, Dark Slate headers, Indigo primary accent, Emerald/Amber/Rose status indicators) -->
+<!-- Application Structure Plan:
+     Aplikasi dirancang sebagai SPA interaktif lima tab untuk memfasilitasi evaluasi KSP SMP berbasis Regulasi Kemendikdasmen 2024-2026:
+     1. Dashboard & Ringkasan: Menampilkan KPI utama (Nilai Akhir NA, Status Kelayakan, Progres Verifikasi, Rekomendasi), serta Grafik Radar 6 Komponen dan Grafik Bar Distribusi Skor.
+     2. Validasi KSP SMP (26 Indikator): Form interaktif berisi identitas sekolah & verifikator, serta 26 indikator validasi yang dikelompokkan dalam 6 komponen. Setiap indikator dilengkapi pemilih skor (1-4) dan dropdown pilihan bukti fisik spesifik untuk meningkatkan akurasi verifikasi.
+     3. Struktur & Beban Belajar: Tabel interaktif alokasi JP intrakurikuler & kokurikuler (Fase D Kelas VII, VIII, dan IX) serta eksplorasi 4 model pengorganisasian pembelajaran (Reguler, Tematik, Terintegrasi, Blok Waktu).
+     4. Panduan Substantif & Deep Learning: Visualisasi interaktif 8 Dimensi Profil Lulusan, Kerangka Deep Learning (Mindful, Meaningful, Joyful & Understanding, Applying, Reflecting), Pembiasaan 7KAIH, serta Integrasi SPAB & Iklim (RAMAH).
+     5. Alur Prosedur Supervisi: Visualisasi 6 Siklus SPMI, 5 Tahap Supervisi Pengawas Sekolah, dan fitur Cetak Laporan Hasil Validasi.
+-->
+<!-- Visualization & Content Choices:
+     - Radar Chart (Chart.js): Memetakan persentase keterpenuhan pada 6 komponen utama KSP secara terpadu.
+     - Bar Chart (Chart.js): Memetakan distribusi kedalaman skor (Skor 1 hingga Skor 4) untuk melihat kesiapan bukti operasional.
+     - Unicode & Tailwind Badges: Digunakan untuk seluruh ikon visual dan indikator status (Tanpa SVG / Tanpa Mermaid JS).
+     - Interactive Dropdowns: Menyediakan pilihan bukti fisik operasional yang relevan secara konseptual untuk tiap-tiap indikator dari 26 indikator validasi.
+-->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Evaluasi & Validasi Dokumen KSP SMP</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eeeefa',
+                            100: '#d5d5f5',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#1e1b4b',
+                        },
+                        darkslate: {
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 650px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 360px;
+            }
+        }
+        .tab-btn.active {
+            border-bottom-color: #4f46e5;
+            color: #ffffff;
+            font-weight: 700;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+            }
+            .print-border {
+                border: 1px solid #cbd5e1 !important;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Header & Navigation Bar -->
+    <header class="bg-darkslate-900 text-white border-b border-slate-800 sticky top-0 z-50 shadow-md no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl">📘</span>
+                    <div>
+                        <h1 class="font-bold text-lg text-white leading-tight">Validasi KSP SMP</h1>
+                        <p class="text-xs text-slate-400">Sistem Evaluasi Digital Kurikulum Satuan Pendidikan (2024–2026)</p>
+                    </div>
+                </div>
+                <div class="hidden lg:flex items-center space-x-2 text-xs bg-darkslate-800 px-3 py-1.5 rounded-full border border-slate-700">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-slate-300 font-medium">Permendikdasmen No. 21/2026 & BPKPDM No. 20/2026</span>
+                </div>
+            </div>
+            <!-- Navigation Tabs -->
+            <nav class="flex space-x-2 border-t border-slate-800 overflow-x-auto scrollbar-none py-1.5">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white transition whitespace-nowrap">
+                    📊 Dashboard & Summary
+                </button>
+                <button onclick="switchTab('instrumen')" id="tab-instrumen" class="tab-btn px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-white transition whitespace-nowrap">
+                    📝 Validasi KSP (26 Indikator)
+                </button>
+                <button onclick="switchTab('struktur')" id="tab-struktur" class="tab-btn px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-white transition whitespace-nowrap">
+                    ⏱️ Beban Belajar & Penjadwalan
+                </button>
+                <button onclick="switchTab('substansi')" id="tab-substansi" class="tab-btn px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-white transition whitespace-nowrap">
+                    🧠 Deep Learning & 8 Dimensi
+                </button>
+                <button onclick="switchTab('prosedur')" id="tab-prosedur" class="tab-btn px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-white transition whitespace-nowrap">
+                    🔄 Siklus SPMI & Supervisi
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Header Khusus Cetak (Hanya tampil saat dicetak) -->
+    <div class="hidden print:block p-4 border-b border-slate-300 mb-4">
+        <div class="text-center">
+            <h1 class="text-xl font-bold uppercase tracking-wide text-slate-900">Laporan Hasil Validasi Dokumen KSP SMP</h1>
+            <p class="text-xs text-slate-600">Instrumen Penjaminan Mutu & Kelayakan Operasional Kurikulum Satuan Pendidikan</p>
+            <p class="text-xs text-slate-500 mt-1">Berdasarkan Regulasi Kemendikdasmen 2024–2026 (Permendikdasmen No. 21/2026 & BPKPDM No. 20/2026)</p>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- SECTION 1: DASHBOARD & SUMMARY -->
+        <section id="sec-dashboard" class="space-y-6">
+            <!-- Intro Paragraph -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900 mb-1">Dashboard Validasi Dokumen KSP SMP</h2>
+                    <p class="text-slate-600 text-sm leading-relaxed">
+                        Halaman ini menyajikan gambaran menyeluruh hasil evaluasi Dokumen Kurikulum Satuan Pendidikan (KSP) Fase D. Analisis otomatis mencakup kalkulasi Nilai Akhir ($NA$), status kelayakan operasional, keterpenuhan 6 komponen mutu, serta distribusi bukti fisik terverifikasi.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 no-print flex-shrink-0">
+                    <button onclick="switchTab('instrumen')" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium text-xs rounded-lg shadow transition flex items-center gap-2">
+                        <span>📝 Mulai Penilaian Instrumen</span>
+                    </button>
+                    <button onclick="window.print()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs rounded-lg border border-slate-300 transition flex items-center gap-1">
+                        <span>🖨️ Cetak Laporan</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Key Metric Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Nilai Akhir (NA)</span>
+                    <div class="mt-2 flex items-baseline justify-between">
+                        <span id="card-na" class="text-3xl font-extrabold text-brand-600">0.0%</span>
+                        <span class="text-xs text-slate-400">Target: ≥ 71%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+                        <div id="card-na-bar" class="bg-brand-600 h-full w-0 transition-all duration-500"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status Kelayakan</span>
+                    <div class="mt-2">
+                        <span id="card-status" class="inline-block px-3 py-1 text-sm font-bold rounded-md bg-slate-100 text-slate-600">
+                            Belum Divalidasi
+                        </span>
+                    </div>
+                    <p id="card-status-desc" class="text-xs text-slate-500 mt-2">Isi instrumen untuk menghitung status.</p>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Progres Verifikasi</span>
+                    <div class="mt-2 flex items-baseline justify-between">
+                        <span id="card-progress" class="text-3xl font-bold text-slate-800">0 / 26</span>
+                        <span class="text-xs text-slate-500">Indikator</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">Seluruh 26 indikator wajib terisi.</p>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Rekomendasi Supervisi</span>
+                    <div class="mt-2">
+                        <span id="card-recom" class="text-xs font-semibold text-slate-700 block line-clamp-2">
+                            Lakukan pengisian skor dan bukti fisik pada tab Instrumen Validasi.
+                        </span>
+                    </div>
+                    <button onclick="switchTab('instrumen')" class="mt-2 text-xs text-brand-600 font-semibold hover:underline text-left no-print">
+                        Buka Form Validasi &rarr;
+                    </button>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Chart 1: Radar Komponen -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="mb-4">
+                        <h3 class="font-bold text-slate-800 text-base">Capaian per Komponen Validasi</h3>
+                        <p class="text-xs text-slate-500">Persentase keterpenuhan rerata skor pada 6 komponen utama KSP</p>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Distribusi Skor -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="mb-4">
+                        <h3 class="font-bold text-slate-800 text-base">Distribusi Kedalaman Skor (Skor 1-4)</h3>
+                        <p class="text-xs text-slate-500">Proporsi kualitas bukti operasional yang berhasil diverifikasi</p>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="scoreDistChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matriks Standar Kelayakan (Tabel Referensi Regulasi) -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="font-bold text-slate-900 text-base mb-3 flex items-center gap-2">
+                    <span>⚖️ Matriks Kategori Kelayakan Operasional (Permendikdasmen No. 21/2026)</span>
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                                <th class="p-3 font-semibold">Rentang Nilai Akhir ($NA$)</th>
+                                <th class="p-3 font-semibold">Kategori</th>
+                                <th class="p-3 font-semibold">Konsekuensi Operasional & Tindak Lanjut Supervisi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            <tr class="hover:bg-emerald-50/50">
+                                <td class="p-3 font-bold text-emerald-700">86.0% – 100.0%</td>
+                                <td class="p-3"><span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 font-bold rounded">Sangat Layak</span></td>
+                                <td class="p-3 text-slate-600">Dokumen memenuhi seluruh kriteria minimum dan memiliki inovasi operasional. Ditetapkan Kepala Sekolah dan disahkan oleh Kepala Dinas Pendidikan.</td>
+                            </tr>
+                            <tr class="hover:bg-indigo-50/50">
+                                <td class="p-3 font-bold text-brand-700">71.0% – 85.9%</td>
+                                <td class="p-3"><span class="px-2.5 py-1 bg-indigo-100 text-brand-800 font-bold rounded">Layak</span></td>
+                                <td class="p-3 text-slate-600">Dokumen memenuhi komponen utama. Disahkan setelah revisi kecil (*minor revision*) sesuai catatan verifikator.</td>
+                            </tr>
+                            <tr class="hover:bg-amber-50/50">
+                                <td class="p-3 font-bold text-amber-700">56.0% – 70.9%</td>
+                                <td class="p-3"><span class="px-2.5 py-1 bg-amber-100 text-amber-800 font-bold rounded">Cukup Layak</span></td>
+                                <td class="p-3 text-slate-600">Terdapat kekurangan substansial pada Perencanaan Berbasis Data (PBD) atau perencanaan pembelajaran. Dikembalikan untuk revisi mayor.</td>
+                            </tr>
+                            <tr class="hover:bg-rose-50/50">
+                                <td class="p-3 font-bold text-rose-700">&lt; 56.0%</td>
+                                <td class="p-3"><span class="px-2.5 py-1 bg-rose-100 text-rose-800 font-bold rounded">Belum Layak</span></td>
+                                <td class="p-3 text-slate-600">Dokumen belum memenuhi standar regulasi. Wajib disusun ulang melalui pendampingan terstruktur (*coaching*) oleh Pengawas Sekolah.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: INSTRUMEN VALIDASI KSP INTERAKTIF (26 INDIKATOR DROPDOWN) -->
+        <section id="sec-instrumen" class="hidden space-y-6">
+            <!-- Intro Paragraph -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Form Instrumen Validasi Dokumen KSP SMP</h2>
+                        <p class="text-slate-600 text-sm">
+                            Lakukan penilaian pada 26 indikator validasi yang terbagi dalam 6 komponen. Tentukan skor (1-4) dan pilih Bukti Fisik Operasional melalui menu dropdown kontekstual untuk setiap indikator.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 no-print flex-shrink-0">
+                        <button onclick="fillSampleData(4)" class="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold rounded-lg hover:bg-emerald-100 transition">
+                            ⚡ Simulasi Sangat Layak (Skor 4)
+                        </button>
+                        <button onclick="fillSampleData(3)" class="px-3 py-1.5 bg-indigo-50 text-brand-700 border border-brand-200 text-xs font-semibold rounded-lg hover:bg-indigo-100 transition">
+                            ⚡ Simulasi Layak (Skor 3)
+                        </button>
+                        <button onclick="resetScores()" class="px-3 py-1.5 bg-slate-100 text-slate-600 border border-slate-200 text-xs font-semibold rounded-lg hover:bg-slate-200 transition">
+                            🔄 Reset Form
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Identitas Sekolah & Verifikator -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm print-border">
+                <h3 class="font-bold text-slate-800 text-sm mb-4 pb-2 border-b border-slate-200 flex items-center justify-between">
+                    <span class="flex items-center gap-2">🏫 Identitas Satuan Pendidikan & Verifikator</span>
+                    <span class="text-xs font-normal text-slate-500">Tahun Ajaran 2026/2027</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Data Sekolah -->
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold text-brand-700 uppercase tracking-wider">A. Data Satuan Pendidikan</h4>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Nama Sekolah</label>
+                            <input type="text" id="identitas-nama-sekolah" placeholder="Contoh: SMP Negeri 1 Pembelajaran Mendalam" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500 bg-white">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">NPSN</label>
+                                <input type="text" id="identitas-npsn" placeholder="20212345" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Kabupaten / Kota</label>
+                                <input type="text" id="identitas-kabkota" placeholder="Kota Pendidikan" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500 bg-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Nama Kepala Sekolah</label>
+                            <input type="text" id="identitas-kepala-sekolah" placeholder="Drs. Utama Bakti, M.Pd." class="w-full text-xs px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500 bg-white">
+                        </div>
+                    </div>
+
+                    <!-- Data Verifikator -->
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold text-brand-700 uppercase tracking-wider">B. Data Pengawas Verifikator</h4>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Nama Pengawas / Verifikator</label>
+                            <input type="text" id="identitas-pengawas" placeholder="Ida Faridlah, M.Ag." class="w-full text-xs px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500 bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">NIP Pengawas</label>
+                            <input type="text" id="identitas-nip-pengawas" placeholder="19750812 200212 2 001" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500 bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Tanggal Verifikasi</label>
+                            <input type="date" id="identitas-tgl-validasi" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500 bg-white">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Container Generasi Dinamis 26 Indikator -->
+            <div id="indicators-container" class="space-y-6">
+                <!-- Akan diisi otomatis oleh JavaScript -->
+            </div>
+
+            <!-- Tombol Hitung Ulang & Simpan -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center no-print">
+                <span class="text-xs text-slate-500">Perubahan skor akan langsung memperbarui grafik & Nilai Akhir secara real-time.</span>
+                <button onclick="calculateAll()" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-lg shadow transition">
+                    💾 Hitung & Simpan Evaluasi
+                </button>
+            </div>
+        </section>
+
+        <!-- SECTION 3: STRUKTUR & BEBAN BELAJAR -->
+        <section id="sec-struktur" class="hidden space-y-6">
+            <!-- Intro Paragraph -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-xl font-bold text-slate-900 mb-1">Struktur Kurikulum & Alokasi Beban Belajar SMP (Fase D)</h2>
+                <p class="text-slate-600 text-sm leading-relaxed">
+                    Sesuai Permendikbudristek No. 12 Tahun 2024, beban belajar SMP dihitung berdasarkan ketentuan $1 \text{ JP} = 40 \text{ menit}$, dengan asumsi minggu efektif per tahun ajaran adalah 36 minggu untuk Kelas VII–VIII dan 32 minggu untuk Kelas IX. Pengorganisasian pembelajaran mencakup alokasi Intrakurikuler Wajib, Kokurikuler (Penguatan Karakter & Lintas Disiplin), dan Muatan Lokal.
+                </p>
+            </div>
+
+            <!-- Tabel Alokasi Jam Pelajaran (JP) -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="font-bold text-slate-800 text-sm mb-4">Rincian Beban Belajar Intrakurikuler dan Kokurikuler per Tahun</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left border-collapse">
+                        <thead>
+                            <tr class="bg-darkslate-900 text-white border-b border-slate-800">
+                                <th class="p-3 font-semibold">Mata Pelajaran / Komponen Struktur</th>
+                                <th class="p-3 font-semibold text-center bg-darkslate-800">Kelas VII & VIII<br>Intrakurikuler / Thn (Minggu)</th>
+                                <th class="p-3 font-semibold text-center bg-darkslate-800">Kelas VII & VIII<br>Kokurikuler / Thn</th>
+                                <th class="p-3 font-semibold text-center bg-brand-900">Total JP Kelas VII & VIII</th>
+                                <th class="p-3 font-semibold text-center bg-darkslate-800">Kelas IX<br>Intrakurikuler / Thn (Minggu)</th>
+                                <th class="p-3 font-semibold text-center bg-darkslate-800">Kelas IX<br>Kokurikuler / Thn</th>
+                                <th class="p-3 font-semibold text-center bg-brand-900">Total JP Kelas IX</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 text-slate-700">
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-2.5 font-semibold text-slate-900">Pendidikan Agama dan Budi Pekerti</td>
+                                <td class="p-2.5 text-center">108 JP (3 JP)</td>
+                                <td class="p-2.5 text-center">36 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">144 JP</td>
+                                <td class="p-2.5 text-center">96 JP (3 JP)</td>
+                                <td class="p-2.5 text-center">32 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">128 JP</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-2.5 font-semibold text-slate-900">Pendidikan Pancasila</td>
+                                <td class="p-2.5 text-center">72 JP (2 JP)</td>
+                                <td class="p-2.5 text-center">36 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">108 JP</td>
+                                <td class="p-2.5 text-center">64 JP (2 JP)</td>
+                                <td class="p-2.5 text-center">32 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">96 JP</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-2.5 font-semibold text-slate-900">Bahasa Indonesia</td>
+                                <td class="p-2.5 text-center">216 JP (6 JP)</td>
+                                <td class="p-2.5 text-center">72 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">288 JP</td>
+                                <td class="p-2.5 text-center">192 JP (6 JP)</td>
+                                <td class="p-2.5 text-center">64 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">256 JP</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-2.5 font-semibold text-slate-900">Matematika</td>
+                                <td class="p-2.5 text-center">180 JP (5 JP)</td>
+                                <td class="p-2.5 text-center">36 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">216 JP</td>
+                                <td class="p-2.5 text-center">160 JP (5 JP)</td>
+                                <td class="p-2.5 text-center">32 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">192 JP</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-2.5 font-semibold text-slate-900">Ilmu Pengetahuan Alam (IPA)</td>
+                                <td class="p-2.5 text-center">144 JP (4 JP)</td>
+                                <td class="p-2.5 text-center">36 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">180 JP</td>
+                                <td class="p-2.5 text-center">128 JP (4 JP)</td>
+                                <td class="p-2.5 text-center">32 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">160 JP</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-2.5 font-semibold text-slate-900">Ilmu Pengetahuan Sosial (IPS)</td>
+                                <td class="p-2.5 text-center">108 JP (3 JP)</td>
+                                <td class="p-2.5 text-center">36 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">144 JP</td>
+                                <td class="p-2.5 text-center">96 JP (3 JP)</td>
+                                <td class="p-2.5 text-center">32 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">128 JP</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-2.5 font-semibold text-slate-900">Bahasa Inggris</td>
+                                <td class="p-2.5 text-center">108 JP (3 JP)</td>
+                                <td class="p-2.5 text-center">36 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">144 JP</td>
+                                <td class="p-2.5 text-center">96 JP (3 JP)</td>
+                                <td class="p-2.5 text-center">32 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">128 JP</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-2.5 font-semibold text-slate-900">Pendidikan Jasmani, Olahraga, & Kesehatan</td>
+                                <td class="p-2.5 text-center">108 JP (3 JP)</td>
+                                <td class="p-2.5 text-center">36 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">144 JP</td>
+                                <td class="p-2.5 text-center">96 JP (3 JP)</td>
+                                <td class="p-2.5 text-center">32 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">128 JP</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-2.5 font-semibold text-slate-900">Informatika</td>
+                                <td class="p-2.5 text-center">72 JP (2 JP)</td>
+                                <td class="p-2.5 text-center">18 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">90 JP</td>
+                                <td class="p-2.5 text-center">64 JP (2 JP)</td>
+                                <td class="p-2.5 text-center">16 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">80 JP</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-2.5 font-semibold text-slate-900">Seni dan Budaya / Prakarya</td>
+                                <td class="p-2.5 text-center">72 JP (2 JP)</td>
+                                <td class="p-2.5 text-center">18 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">90 JP</td>
+                                <td class="p-2.5 text-center">64 JP (2 JP)</td>
+                                <td class="p-2.5 text-center">16 JP</td>
+                                <td class="p-2.5 text-center font-bold text-brand-700 bg-brand-50/50">80 JP</td>
+                            </tr>
+                            <tr class="bg-slate-100 font-bold text-slate-900 border-t-2 border-slate-300">
+                                <td class="p-3">TOTAL STRUKTUR WAJIB</td>
+                                <td class="p-3 text-center text-brand-700">1044 JP (29 JP)</td>
+                                <td class="p-3 text-center text-brand-700">360 JP</td>
+                                <td class="p-3 text-center bg-brand-100 text-brand-900 font-extrabold">1404 JP</td>
+                                <td class="p-3 text-center text-brand-700">928 JP (29 JP)</td>
+                                <td class="p-3 text-center text-brand-700">320 JP</td>
+                                <td class="p-3 text-center bg-brand-100 text-brand-900 font-extrabold">1248 JP</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 italic">
+                                <td class="p-2.5 text-slate-700">Muatan Lokal (Opsional)</td>
+                                <td class="p-2.5 text-center">Maks 72 JP (2 JP)</td>
+                                <td class="p-2.5 text-center">-</td>
+                                <td class="p-2.5 text-center">Maks 72 JP</td>
+                                <td class="p-2.5 text-center">Maks 64 JP (2 JP)</td>
+                                <td class="p-2.5 text-center">-</td>
+                                <td class="p-2.5 text-center">Maks 64 JP</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 4 Model Pendekatan Pengorganisasian Pembelajaran -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-slate-900 text-base">Model Pendekatan Pengorganisasian Pembelajaran</h3>
+                <p class="text-xs text-slate-600">
+                    Satuan pendidikan diberikan fleksibilitas untuk memilih model penjadwalan sesuai kesiapan SDM, karakteristik peserta didik, serta sarana-prasarana sekolah:
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                        <span class="inline-block px-2.5 py-0.5 bg-blue-100 text-blue-800 text-xs font-bold rounded mb-2">1. Pendekatan Reguler</span>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Setiap mata pelajaran diampu secara terpisah dengan alokasi JP yang terdistribusi secara konsisten dan teratur setiap minggu sepanjang semester.
+                        </p>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                        <span class="inline-block px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-bold rounded mb-2">2. Pendekatan Tematik</span>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Pembelajaran diorganisasikan mengelilingi tema payung yang memadukan indikator-indikator kompetensi dari beberapa mata pelajaran terdekat.
+                        </p>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                        <span class="inline-block px-2.5 py-0.5 bg-amber-100 text-amber-800 text-xs font-bold rounded mb-2">3. Pendekatan Terintegrasi</span>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Konsep-konsep dari beberapa mata pelajaran dilebur secara utuh ke dalam satu unit pembelajaran interdisipliner (seperti integrasi IPA, IPS, dan Bahasa Indonesia dalam Isu Lingkungan).
+                        </p>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                        <span class="inline-block px-2.5 py-0.5 bg-purple-100 text-purple-800 text-xs font-bold rounded mb-2">4. Pendekatan Blok Waktu</span>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Alokasi waktu mata pelajaran dikelompokkan dalam blok harian, mingguan, atau bulanan sehingga target JP diselesaikan secara konsentratif sebelum berpindah ke mata pelajaran lain.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: PANDUAN SUBSTANSI & DEEP LEARNING -->
+        <section id="sec-substansi" class="hidden space-y-6">
+            <!-- Intro Paragraph -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-xl font-bold text-slate-900 mb-1">Arsitektur Substantif & Kerangka Pedagogi Terkini</h2>
+                <p class="text-slate-600 text-sm leading-relaxed">
+                    Bagian ini menguraikan landasan konseptual utama yang wajib tercermin dalam dokumen KSP SMP: penyelarasan 8 Dimensi Profil Lulusan, Kerangka *Deep Learning* (Permendikdasmen No. 13/2025), Pembiasaan 7KAIH (Permendikdasmen No. 10/2025), serta Integrasi SPAB & Risiko Iklim (Permendikdasmen No. 12/2025).
+                </p>
+            </div>
+
+            <!-- 8 Dimensi Profil Lulusan Grid -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                    <span>🌟 8 Dimensi Profil Lulusan SMP (Fase D)</span>
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div class="font-bold text-xs text-brand-700 mb-1">1. Keimanan & Akhlak Mulia</div>
+                        <p class="text-[11px] text-slate-600">Karakter spiritual, integritas moral, dan etika berinteraksi dengan sesama serta alam.</p>
+                    </div>
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div class="font-bold text-xs text-brand-700 mb-1">2. Kewargaan & Kebinekaan</div>
+                        <p class="text-[11px] text-slate-600">Kesadaran berbangsa, kepatuhan hukum, pemahaman hak-kewajiban, dan kearifan budaya.</p>
+                    </div>
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div class="font-bold text-xs text-brand-700 mb-1">3. Penalaran Kritis</div>
+                        <p class="text-[11px] text-slate-600">Keterampilan mengolah data, evaluasi argumen, dan pengambilan keputusan berbasis bukti.</p>
+                    </div>
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div class="font-bold text-xs text-brand-700 mb-1">4. Kreativitas</div>
+                        <p class="text-[11px] text-slate-600">Gagasan orisinal, produk inovatif, dan pemecahan masalah secara fleksibel.</p>
+                    </div>
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div class="font-bold text-xs text-brand-700 mb-1">5. Kolaborasi</div>
+                        <p class="text-[11px] text-slate-600">Kerja sama tim, komunikasi inklusif, dan kepedulian sosial antar-sesama murid.</p>
+                    </div>
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div class="font-bold text-xs text-brand-700 mb-1">6. Kemandirian</div>
+                        <p class="text-[11px] text-slate-600">Regulasi emosi, penetapan target belajar pribadi, dan rasa tanggung jawab.</p>
+                    </div>
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div class="font-bold text-xs text-brand-700 mb-1">7. Kesehatan Jasmani & Mental</div>
+                        <p class="text-[11px] text-slate-600">Pola hidup bersih-sehat, kebugaran fisik, kebiasaan olahraga, dan resiliensi emosi.</p>
+                    </div>
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div class="font-bold text-xs text-brand-700 mb-1">8. Komunikasi Efektif</div>
+                        <p class="text-[11px] text-slate-600">Penyampaian gagasan lisan, tertulis, dan digital secara etis dan persuasif.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deep Learning Framework Diagram/Cards -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-slate-900 text-base">Deep Learning Framework (Permendikdasmen No. 13/2025)</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Kerangka pembelajaran mendalam berfokus pada transisi dari hafalan superfisial menuju pemahaman konseptual bermakna melalui dua pilar utama:
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                    <!-- Elemen Suasana Belajar -->
+                    <div class="p-4 bg-indigo-50/60 border border-indigo-200 rounded-xl space-y-3">
+                        <h4 class="font-bold text-xs text-brand-800 uppercase tracking-wider flex items-center gap-2">
+                            <span>🌈 3 Elemen Suasana Belajar</span>
+                        </h4>
+                        <div class="space-y-2">
+                            <div class="bg-white p-3 rounded-lg border border-indigo-100 shadow-sm">
+                                <span class="font-bold text-xs text-slate-800">1. Mindful Learning</span>
+                                <p class="text-[11px] text-slate-600 mt-0.5">Mendorong kesadaran penuh terhadap proses belajar, kesadaran emosional, dan keterlibatan aktif tanpa tekanan.</p>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg border border-indigo-100 shadow-sm">
+                                <span class="font-bold text-xs text-slate-800">2. Meaningful Learning</span>
+                                <p class="text-[11px] text-slate-600 mt-0.5">Menghubungkan konteks nyata kehidupan murid, kearifan lokal, dan pemanfaatan praktis dalam kehidupan sehari-hari.</p>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg border border-indigo-100 shadow-sm">
+                                <span class="font-bold text-xs text-slate-800">3. Joyful Learning</span>
+                                <p class="text-[11px] text-slate-600 mt-0.5">Suasana belajar yang menantang namun menyenangkan guna menumbuhkan rasa ingin tahu ilmiah bawaan (*innate curiosity*).</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tahapan Pengalaman Belajar -->
+                    <div class="p-4 bg-emerald-50/60 border border-emerald-200 rounded-xl space-y-3">
+                        <h4 class="font-bold text-xs text-emerald-800 uppercase tracking-wider flex items-center gap-2">
+                            <span>🧩 3 Tahapan Pengalaman Belajar</span>
+                        </h4>
+                        <div class="space-y-2">
+                            <div class="bg-white p-3 rounded-lg border border-emerald-100 shadow-sm">
+                                <span class="font-bold text-xs text-slate-800">1. Understanding (Memahami)</span>
+                                <p class="text-[11px] text-slate-600 mt-0.5">Konstruksi pemahaman konsep secara mendalam melalui eksplorasi, *inquiry*, dan sintesis antarilmu.</p>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg border border-emerald-100 shadow-sm">
+                                <span class="font-bold text-xs text-slate-800">2. Applying (Mengaplikasikan)</span>
+                                <p class="text-[11px] text-slate-600 mt-0.5">Penerapan konsep ke dalam pemecahan masalah nyata melalui tugas kinerja, proyek, atau simulasi.</p>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg border border-emerald-100 shadow-sm">
+                                <span class="font-bold text-xs text-slate-800">3. Reflecting (Merefleksikan)</span>
+                                <p class="text-[11px] text-slate-600 mt-0.5">Metakognisi di mana murid mengevaluasi pemahaman diri, proses berpikir, serta nilai-nilai karakter yang diperoleh.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gerakan 7KAIH & SPAB / Climate RAMAH -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 7KAIH -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                        <span>🗓️ Gerakan 7 Hari Karakter Anak Indonesia Hebat (7KAIH)</span>
+                    </h3>
+                    <p class="text-xs text-slate-600">Integrasi 7 pembiasaan harian terukur dalam kokurikuler dan budaya sekolah:</p>
+                    <ul class="text-xs text-slate-700 space-y-1.5 pl-4 list-disc">
+                        <li><strong>Bangun Pagi Tepat Waktu:</strong> Kedisiplinan diri dan manajemen waktu.</li>
+                        <li><strong>Beribadah Sesuai Ajaran Agama:</strong> Penguatan spiritualitas & etika.</li>
+                        <li><strong>Berolahraga Teratur:</strong> Kebugaran fisik dan ketahanan mental.</li>
+                        <li><strong>Makan Makanan Sehat & Bergizi:</strong> Kesadaran gizi seimbang.</li>
+                        <li><strong>Gemar Membaca & Eksplorasi Ilmu:</strong> Budaya literasi dan rasa ingin tahu.</li>
+                        <li><strong>Bermasyarakat & Aktif Berbagi:</strong> Kepedulian sosial dan gotong-royong.</li>
+                        <li><strong>Istirahat/Tidur Tepat Waktu:</strong> Pemulihan fisik dan keseimbangan hidup.</li>
+                    </ul>
+                </div>
+
+                <!-- SPAB & Climate RAMAH -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                        <span>🌱 Integrasi SPAB & Prinsip RAMAH Iklim</span>
+                    </h3>
+                    <p class="text-xs text-slate-600">Komitmen sekolah aman bencana dan kesadaran ekologis:</p>
+                    <div class="space-y-2 text-xs">
+                        <div class="p-2.5 bg-slate-50 rounded border border-slate-200">
+                            <strong>Satuan Pendidikan Aman Bencana (SPAB):</strong> Memuat peta zonasi risiko bencana lokal (gempa/banjir), POS tanggap darurat, Tas Siaga Bencana, dan alokasi simulasi evakuasi berkala.
+                        </div>
+                        <div class="p-2.5 bg-slate-50 rounded border border-slate-200">
+                            <strong>Prinsip RAMAH Pendidikan Iklim:</strong>
+                            <div class="mt-1 text-[11px] text-slate-600 grid grid-cols-1 gap-1">
+                                <span>• <strong>R</strong>elevan dengan konteks iklim lokal</span>
+                                <span>• <strong>A</strong>fektif membangun kepedulian emosional</span>
+                                <span>• <strong>M</strong>erujuk data ilmiah yang valid</span>
+                                <span>• <strong>A</strong>ksi nyata lingkungan (komposting/pohon)</span>
+                                <span>• <strong>H</strong>olistik terintegrasi interdisipliner</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: ALUR PROSEDUR SUPERVISI & SIKLUS SPMI -->
+        <section id="sec-prosedur" class="hidden space-y-6">
+            <!-- Intro Paragraph -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-xl font-bold text-slate-900 mb-1">Sistem Penjaminan Mutu & Alur Prosedur Supervisi KSP</h2>
+                <p class="text-slate-600 text-sm leading-relaxed">
+                    Sesuai Permendikdasmen No. 21 Tahun 2026 tentang Sistem Penjaminan Mutu Pendidikan (SPMP), penetapan dan evaluasi dokumen KSP diintegrasikan ke dalam 6 siklus Penjaminan Mutu Internal (SPMI) dan 5 tahapan supervisi akademik oleh Pengawas Sekolah/Penilik.
+                </p>
+            </div>
+
+            <!-- 6 Siklus SPMI -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-slate-900 text-base">6 Siklus Sistem Penjaminan Mutu Internal (SPMI) Sekolah</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg relative">
+                        <span class="absolute top-3 right-3 text-lg font-black text-slate-300">01</span>
+                        <div class="font-bold text-xs text-brand-700 mb-1">Penetapan Standar Mutu</div>
+                        <p class="text-xs text-slate-600">Menentukan indikator sasaran mutu sekolah merujuk pada regulasi Kemendikdasmen 2024–2026.</p>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg relative">
+                        <span class="absolute top-3 right-3 text-lg font-black text-slate-300">02</span>
+                        <div class="font-bold text-xs text-brand-700 mb-1">Pemetaan Mutu (PBD)</div>
+                        <p class="text-xs text-slate-600">Analisis ketercapaian kondisi faktual berbasis indikator Rapor Pendidikan (IRB).</p>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg relative">
+                        <span class="absolute top-3 right-3 text-lg font-black text-slate-300">03</span>
+                        <div class="font-bold text-xs text-brand-700 mb-1">Perencanaan Strategis</div>
+                        <p class="text-xs text-slate-600">Penyusunan dokumen KSP, Rencana Kerja Sekolah (RKT), dan RKAS terpadu.</p>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg relative">
+                        <span class="absolute top-3 right-3 text-lg font-black text-slate-300">04</span>
+                        <div class="font-bold text-xs text-brand-700 mb-1">Pelaksanaan Pemenuhan</div>
+                        <p class="text-xs text-slate-600">Implementasi kurikulum, pembelajaran *Deep Learning*, dan program pembiasaan 7KAIH.</p>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg relative">
+                        <span class="absolute top-3 right-3 text-lg font-black text-slate-300">05</span>
+                        <div class="font-bold text-xs text-brand-700 mb-1">Evaluasi & Validasi</div>
+                        <p class="text-xs text-slate-600">Verifikasi dokumen KSP menggunakan instrumen 26 indikator berbasis bukti operasional.</p>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg relative">
+                        <span class="absolute top-3 right-3 text-lg font-black text-slate-300">06</span>
+                        <div class="font-bold text-xs text-brand-700 mb-1">Tindak Lanjut & Coaching</div>
+                        <p class="text-xs text-slate-600">Penyusunan rekomendasi perbaikan, pengesahan Dinas, atau *coaching* pendampingan TPK.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5 Tahap Prosedur Supervisi Akademik -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-slate-900 text-base">5 Tahapan Prosedur Supervisi Dokumen KSP oleh Pengawas</h3>
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-600 text-white font-bold text-xs flex items-center justify-center">1</span>
+                        <div>
+                            <div class="font-bold text-xs text-slate-800">Pemeriksaan Kelengkapan Berkas (Desk Evaluation)</div>
+                            <p class="text-xs text-slate-600">Pengawas memeriksa ketersediaan draf KSP beserta lampiran wajib (ATP, sampel Modul Ajar, Peta PBD, POS SPAB).</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-600 text-white font-bold text-xs flex items-center justify-center">2</span>
+                        <div>
+                            <div class="font-bold text-xs text-slate-800">Penilaian Rubrik Berbasis Bukti Fisik Operasional</div>
+                            <p class="text-xs text-slate-600">Verifikator memberikan skor 1 hingga 4 pada 26 indikator validasi sesuai ketersediaan bukti operasional faktual.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-600 text-white font-bold text-xs flex items-center justify-center">3</span>
+                        <div>
+                            <div class="font-bold text-xs text-slate-800">Pencatatan Rekomendasi Korektif</div>
+                            <p class="text-xs text-slate-600">Catatan masukan perbaikan dituliskan secara spesifik pada indikator yang belum mencapai skor maksimal ($S_i < 4$).</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-600 text-white font-bold text-xs flex items-center justify-center">4</span>
+                        <div>
+                            <div class="font-bold text-xs text-slate-800">Kalkulasi Otomatis Nilai Akhir & Penetapan Status</div>
+                            <p class="text-xs text-slate-600">Aplikasi menghitung persentase keterpenuhan $NA$ dan menetapkan status kelayakan (Sangat Layak, Layak, Cukup Layak, Belum Layak).</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-600 text-white font-bold text-xs flex items-center justify-center">5</span>
+                        <div>
+                            <div class="font-bold text-xs text-slate-800">Umpan Balik, Pengesahan, atau Coaching</div>
+                            <p class="text-xs text-slate-600">Jika $NA \ge 71\%$, dokumen direkomendasikan pengesahan ke Dinas Pendidikan. Jika $NA < 71\%$, Pengawas memberikan *coaching* pendampingan revisi.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Area Tanda Tangan Laporan Cetak -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm print-border">
+                <h3 class="font-bold text-slate-900 text-sm mb-4">Lembar Validasi & Penetapan Laporan Hasil Evaluasi</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-center text-xs pt-4">
+                    <div>
+                        <p class="text-slate-500">Mengetahui/Menyetujui,</p>
+                        <p class="font-bold text-slate-800 mt-1">Kepala Sekolah SMP</p>
+                        <div class="h-20 flex items-center justify-center text-slate-300 italic">
+                            (Tanda Tangan & Stempel)
+                        </div>
+                        <p id="print-kepala-sekolah" class="font-bold text-slate-900 border-t border-slate-300 pt-1 mx-8">[Nama Kepala Sekolah]</p>
+                        <p class="text-slate-500">NIP. -</p>
+                    </div>
+
+                    <div>
+                        <p id="print-tgl-lokasi" class="text-slate-500">Diverifikasi pada: [Tanggal Verifikasi]</p>
+                        <p class="font-bold text-slate-800 mt-1">Pengawas Sekolah / Verifikator</p>
+                        <div class="h-20 flex items-center justify-center text-slate-300 italic">
+                            (Tanda Tangan & Stempel)
+                        </div>
+                        <p id="print-pengawas" class="font-bold text-slate-900 border-t border-slate-300 pt-1 mx-8">Ida Faridlah, M.Ag.</p>
+                        <p id="print-nip-pengawas" class="text-slate-500">NIP. 19750812 200212 2 001</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer App & Credits -->
+    <footer class="bg-darkslate-950 text-slate-400 border-t border-slate-800 py-6 mt-12 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs space-y-2">
+            <p class="text-slate-300 font-semibold">Aplikasi Evaluasi & Validasi Kurikulum Satuan Pendidikan (KSP) SMP Interaktif</p>
+            <p class="text-slate-500">
+                Dikembangkan berbasis Regulasi Kemendikdasmen 2024–2026 (Permendikbudristek 12/2024, Permendikdasmen 10, 11, 12, 13/2025, BPKPDM 20/2026, Permendikdasmen 21/2026).
+            </p>
+            <div class="pt-2 border-t border-slate-800/80 text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <span>Pengembang: <strong>Ida Faridlah.</strong></span>
+                <span>© 2026 Kemendikdasmen - Sistem Informasi Validasi KSP</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Data Master 26 Indikator Validasi KSP SMP
+        const INDICATORS_DATA = [
+            // KOMPONEN I: KELENGKAPAN ADMINISTRASI DOKUMEN
+            {
+                compIndex: 0,
+                compCode: "KOMPONEN I",
+                compTitle: "KELENGKAPAN ADMINISTRASI DOKUMEN",
+                id: 1,
+                code: "I.1",
+                title: "Halaman Judul (Cover)",
+                desc: "Memuat judul presisi KSP SMP, nama sekolah, NPSN, Tahun Ajaran 2026/2027, logo sekolah/pemda, dan alamat lengkap.",
+                options: [
+                    "Skor 1: Halaman judul belum memuat judul KSP yang presisi dan identitas tidak lengkap.",
+                    "Skor 2: Halaman judul memuat judul KSP tetapi NPSN/Tahun Ajaran 2026/2027 belum tercantum.",
+                    "Skor 3: Halaman judul memuat judul, nama sekolah, NPSN, TA 2026/2027, dan logo secara lengkap.",
+                    "Skor 4: Lembar Cover resmi berstempel digital/basah, memuat seluruh identitas lengkap, presisi, dan estetik."
+                ]
+            },
+            {
+                compIndex: 0,
+                compCode: "KOMPONEN I",
+                compTitle: "KELENGKAPAN ADMINISTRASI DOKUMEN",
+                id: 2,
+                code: "I.2",
+                title: "Lembar Pengesahan & Penetapan",
+                desc: "Ditandatangani Kepala Sekolah, Komite Sekolah, dan lembar verifikasi/pengesahan Kepala Dinas Pendidikan/Pengawas.",
+                options: [
+                    "Skor 1: Belum ada lembar pengesahan dan penetapan.",
+                    "Skor 2: Lembar pengesahan hanya ditandatangani oleh Kepala Sekolah tanpa Komite.",
+                    "Skor 3: Ditandatangani Kepala Sekolah dan Komite, serta tersedia rumusan lembar verifikasi pengawas.",
+                    "Skor 4: Tanda tangan basah/elektronik terverifikasi oleh Kepala Sekolah, Komite, dan stempel dinas/pengawas."
+                ]
+            },
+            {
+                compIndex: 0,
+                compCode: "KOMPONEN I",
+                compTitle: "KELENGKAPAN ADMINISTRASI DOKUMEN",
+                id: 3,
+                code: "I.3",
+                title: "Kata Pengantar & Daftar Isi",
+                desc: "Memuat konsideran kebijakan Kemendikdasmen 2024–2026, apresiasi TPK, serta daftar isi yang presisi.",
+                options: [
+                    "Skor 1: Kata Pengantar dan Daftar Isi tidak sinkron dengan nomor halaman dokumen.",
+                    "Skor 2: Kata pengantar memuat uraian umum tetapi belum merujuk regulasi Kemendikdasmen 2024-2026.",
+                    "Skor 3: Kata pengantar merujuk regulasi baru dan daftar isi sinkron dengan susunan bab KSP.",
+                    "Skor 4: Daftar isi sinkron dengan nomor halaman dokumen serta memuat konsideran kebijakan Kemendikdasmen 2024-2026 secara lengkap."
+                ]
+            },
+
+            // KOMPONEN II: ANALISIS KARAKTERISTIK SATUAN PENDIDIKAN
+            {
+                compIndex: 1,
+                compCode: "KOMPONEN II",
+                compTitle: "ANALISIS KARAKTERISTIK SATUAN PENDIDIKAN",
+                id: 4,
+                code: "II.4",
+                title: "Analisis Karakteristik Murid",
+                desc: "Menggambarkan profil keragaman minat, bakat, gaya belajar, kondisi sosio-ekonomi, serta tahap perkembangan Fase D.",
+                options: [
+                    "Skor 1: Analisis murid bersifat umum tanpa data pendukung.",
+                    "Skor 2: Menggambarkan kondisi murid secara kuantitatif kasar tanpa pemetaan gaya belajar.",
+                    "Skor 3: Menyajikan data profil minat, bakat, gaya belajar, dan sosial ekonomi murid secara rinci.",
+                    "Skor 4: Hasil asesmen diagnostik non-kognitif & pemetaan psikotes murid Fase D terlampir lengkap dan terintegrasi."
+                ]
+            },
+            {
+                compIndex: 1,
+                compCode: "KOMPONEN II",
+                compTitle: "ANALISIS KARAKTERISTIK SATUAN PENDIDIKAN",
+                id: 5,
+                code: "II.5",
+                title: "Analisis Pendidik & Tendik",
+                desc: "Memuat peta kualifikasi akademik, sertifikasi, kompetensi pedagogis/digital, serta rasio guru-murid.",
+                options: [
+                    "Skor 1: Hanya mencantumkan jumlah guru tanpa kualifikasi.",
+                    "Skor 2: Menyajikan tabel kualifikasi S1/S2 guru tetapi belum memetakan kompetensi digital.",
+                    "Skor 3: Memuat tabel kualifikasi, sertifikasi pendidik, dan analisis rasio guru-murid.",
+                    "Skor 4: Tabel Inventaris PTK & pemetaan kebutuhan pengembangan profesional guru terurai berbasis data terpercaya."
+                ]
+            },
+            {
+                compIndex: 1,
+                compCode: "KOMPONEN II",
+                compTitle: "ANALISIS KARAKTERISTIK SATUAN PENDIDIKAN",
+                id: 6,
+                code: "II.6",
+                title: "Analisis Sarana & Prasarana",
+                desc: "Menggambarkan daya dukung ruang kelas, lab IPA/Komputer, perpustakaan, akses TIK, dan fasilitas inklusif.",
+                options: [
+                    "Skor 1: Deskripsi sarpras terbatas pada daftar inventaris singkat.",
+                    "Skor 2: Menguraikan sarpras utama tetapi belum menganalisis aksesibilitas TIK.",
+                    "Skor 3: Menggambarkan daya dukung lab, TIK, dan fasilitas pembelajaran dengan baik.",
+                    "Skor 4: Berita acara inventarisasi sarpras & peta digital fasilitas sekolah (termasuk fasilitas inklusi) terlampir utuh."
+                ]
+            },
+            {
+                compIndex: 1,
+                compCode: "KOMPONEN II",
+                compTitle: "ANALISIS KARAKTERISTIK SATUAN PENDIDIKAN",
+                id: 7,
+                code: "II.7",
+                title: "Analisis Sosbud & Kemitraan",
+                desc: "Menguraikan potensi budaya lokal, nilai kemasyarakatan, serta jejaring kerja sama dengan orang tua, DU/DI, & instansi.",
+                options: [
+                    "Skor 1: Belum memuat analisis konteks sosial budaya lingkungan sekitar.",
+                    "Skor 2: Menyebutkan potensi sosbud tetapi belum ada program kemitraan nyata.",
+                    "Skor 3: Menguraikan potensi sosbud lokal dan bentuk kerja sama dengan mitra instansi.",
+                    "Skor 4: MoU/Kerja sama mitra & dokumen pemetaan potensi daerah/DU-DI terlampir aktif dan aplikatif."
+                ]
+            },
+            {
+                compIndex: 1,
+                compCode: "KOMPONEN II",
+                compTitle: "ANALISIS KARAKTERISTIK SATUAN PENDIDIKAN",
+                id: 8,
+                code: "II.8",
+                title: "Perencanaan Berbasis Data (PBD)",
+                desc: "Memanfaatkan data Rapor Pendidikan (literasi, numerasi, karakter, iklim keamanan) via analisis SWOT/Fishbone.",
+                options: [
+                    "Skor 1: Penyusunan KSP belum memanfaatkan data Rapor Pendidikan.",
+                    "Skor 2: Mencantumkan nilai Rapor Pendidikan tetapi belum melakukan analisis Identifikasi-Refleksi-Benahi.",
+                    "Skor 3: Melakukan analisis IRB berbasis Rapor Pendidikan pada indikator prioritas.",
+                    "Skor 4: Dokumen Rapor Pendidikan & Lembar Kerja PBD (Identifikasi-Refleksi-Benahi / Fishbone) terintegrasi eksplisit."
+                ]
+            },
+            {
+                compIndex: 1,
+                compCode: "KOMPONEN II",
+                compTitle: "ANALISIS KARAKTERISTIK SATUAN PENDIDIKAN",
+                id: 9,
+                code: "II.9",
+                title: "Integrasi SPAB & Risiko Iklim",
+                desc: "Menguraikan peta risiko bencana lokal (gempa/banjir) dan tingkat kerentanan perubahan iklim sekolah.",
+                options: [
+                    "Skor 1: Belum ada analisis risiko bencana dan isu iklim.",
+                    "Skor 2: Menyebutkan potensi bencana tetapi belum menyusun kerangka penanggulangan.",
+                    "Skor 3: Menguraikan peta risiko bencana lokal dan program kesadaran lingkungan.",
+                    "Skor 4: Peta zonasi risiko bencana & dokumen rencana kontinjensi sekolah (SPAB & RAMAH Iklim) terlampir rinci."
+                ]
+            },
+
+            // KOMPONEN III: VISI, MISI, DAN TUJUAN SATUAN PENDIDIKAN
+            {
+                compIndex: 2,
+                compCode: "KOMPONEN III",
+                compTitle: "VISI, MISI, DAN TUJUAN SATUAN PENDIDIKAN",
+                id: 10,
+                code: "III.10",
+                title: "Rumusan Visi Sekolah",
+                desc: "Berpusat pada murid, berjangka panjang, realistis, serta menjiwai 8 Dimensi Profil Lulusan.",
+                options: [
+                    "Skor 1: Visi belum berpusat pada murid dan tidak terukur.",
+                    "Skor 2: Visi berpusat pada murid tetapi belum mengintegrasikan 8 Dimensi Profil Lulusan.",
+                    "Skor 3: Visi terukur, berjangka panjang, dan mencerminkan indikator profil lulusan.",
+                    "Skor 4: Teks visi yang terpasang di media publikasi sekolah & dokumen KSP menjiwai 8 Dimensi Profil Lulusan secara visioner."
+                ]
+            },
+            {
+                compIndex: 2,
+                compCode: "KOMPONEN III",
+                compTitle: "VISI, MISI, DAN TUJUAN SATUAN PENDIDIKAN",
+                id: 11,
+                code: "III.11",
+                title: "Rumusan Misi Sekolah",
+                desc: "Menggunakan kalimat tindakan (action statement) spesifik yang menjawab strategi pencapaian visi.",
+                options: [
+                    "Skor 1: Misi bersifat umum dan tidak menjawab pencapaian visi.",
+                    "Skor 2: Misi menggunakan kalimat tindakan tetapi tidak selaras dengan indikator visi.",
+                    "Skor 3: Misi berupa kalimat tindakan spesifik yang dirancang untuk mencapai visi.",
+                    "Skor 4: Matriks keterkaitan antara kalimat Misi dengan indikator Visi terurai logis dan terukur."
+                ]
+            },
+            {
+                compIndex: 2,
+                compCode: "KOMPONEN III",
+                compTitle: "VISI, MISI, DAN TUJUAN SATUAN PENDIDIKAN",
+                id: 12,
+                code: "III.12",
+                title: "Rumusan Tujuan Sekolah",
+                desc: "Memenuhi kriteria SMARTE (Specific, Measurable, Achievable, Relevant, Time-bound, Evaluated, Reviewed).",
+                options: [
+                    "Skor 1: Tujuan sekolah belum memuat target waktu yang jelas.",
+                    "Skor 2: Tujuan memuat target tetapi belum memenuhi prinsip SMARTE.",
+                    "Skor 3: Tujuan dirancang jangka pendek dan menengah sesuai kriteria SMART.",
+                    "Skor 4: Target indikator kinerja kuantitatif/kualitatif jangka pendek & menengah memenuhi kriteria SMARTE secara presisi."
+                ]
+            },
+            {
+                compIndex: 2,
+                compCode: "KOMPONEN III",
+                compTitle: "VISI, MISI, DAN TUJUAN SATUAN PENDIDIKAN",
+                id: 13,
+                code: "III.13",
+                title: "Penyelarasan Visi-Misi-Tujuan",
+                desc: "Menunjukkan benang merah logis antara hasil PBD, visi, misi, dan sasaran tujuan sekolah.",
+                options: [
+                    "Skor 1: Tidak terlihat keterkaitan antara PBD dengan Visi-Misi-Tujuan.",
+                    "Skor 2: Penyelarasan PBD dan Visi-Misi terurai secara parsial.",
+                    "Skor 3: Menunjukkan benang merah antara rekomendasi PBD, Visi, Misi, dan Tujuan.",
+                    "Skor 4: Matriks penyelarasan isu strategis PBD -> Visi -> Misi -> Tujuan tersusun sangat runut dan terintegrasi."
+                ]
+            },
+
+            // KOMPONEN IV: PENGORGANISASIAN PEMBELAJARAN
+            {
+                compIndex: 3,
+                compCode: "KOMPONEN IV",
+                compTitle: "PENGORGANISASIAN PEMBELAJARAN",
+                id: 14,
+                code: "IV.14",
+                title: "Struktur Intrakurikuler",
+                desc: "Memuat alokasi JP mata pelajaran wajib dan mulok per tahun secara presisi (VII–VIII: 1044 JP; IX: 928 JP).",
+                options: [
+                    "Skor 1: Perhitungan JP intrakurikuler tidak sesuai dengan regulasi Permendikbudristek 12/2024.",
+                    "Skor 2: Struktur JP intrakurikuler sesuai tetapi belum merinci alokasi per minggu/tahun.",
+                    "Skor 3: Memuat struktur JP intrakurikuler presisi (Kelas VII-VIII: 1044 JP, Kelas IX: 928 JP).",
+                    "Skor 4: Tabel struktur kurikulum rinci sesuai Permendikbudristek 12/2024 termasuk opsi Mulok maksimal 72/64 JP."
+                ]
+            },
+            {
+                compIndex: 3,
+                compCode: "KOMPONEN IV",
+                compTitle: "PENGORGANISASIAN PEMBELAJARAN",
+                id: 15,
+                code: "IV.15",
+                title: "Struktur Kokurikuler",
+                desc: "Memuat alokasi JP kokurikuler per tahun (VII–VIII: 360 JP; IX: 320 JP) secara rinci.",
+                options: [
+                    "Skor 1: Alokasi JP kokurikuler tidak tercantum atau salah perhitungan.",
+                    "Skor 2: Menyebutkan total JP kokurikuler tetapi belum membagi jadwal distribusinya.",
+                    "Skor 3: Memuat alokasi JP kokurikuler tepat (Kelas VII-VIII: 360 JP, Kelas IX: 320 JP).",
+                    "Skor 4: Jadwal dan distribusi jam kokurikuler tahunan terpetakan secara rinci dalam kalender akademik."
+                ]
+            },
+            {
+                compIndex: 3,
+                compCode: "KOMPONEN IV",
+                compTitle: "PENGORGANISASIAN PEMBELAJARAN",
+                id: 16,
+                code: "IV.16",
+                title: "Bentuk Pelaksanaan Kokurikuler",
+                desc: "Mengorganisasikan pembelajaran kolaboratif lintas disiplin dan Gerakan 7KAIH.",
+                options: [
+                    "Skor 1: Bentuk kokurikuler belum terencana dengan jelas.",
+                    "Skor 2: Memuat tema proyek lintas disiplin tetapi belum mengintegrasikan Gerakan 7KAIH.",
+                    "Skor 3: Mengorganisasikan proyek lintas disiplin ilmu dan jadwal pembiasaan karakter.",
+                    "Skor 4: Matriks tema proyek lintas disiplin & POS Gerakan 7KAIH (7 pembiasaan harian) tersusun terstruktur."
+                ]
+            },
+            {
+                compIndex: 3,
+                compCode: "KOMPONEN IV",
+                compTitle: "PENGORGANISASIAN PEMBELAJARAN",
+                id: 17,
+                code: "IV.17",
+                title: "Program Ekstrakurikuler",
+                desc: "Memuat Pramuka sebagai ekstrakurikuler serta pilihan minat-bakat murid.",
+                options: [
+                    "Skor 1: Daftar ekstrakurikuler hanya memuat nama kegiatan singkat.",
+                    "Skor 2: Memuat Pramuka dan pilihan ekskul tetapi belum ada program kerja terstruktur.",
+                    "Skor 3: Menyajikan daftar ekskul, alokasi waktu, dan target kompetensi bakat murid.",
+                    "Skor 4: Program kerja ekstrakurikuler, jadwal, dan daftar pembina terlampir lengkap dan operasional."
+                ]
+            },
+            {
+                compIndex: 3,
+                compCode: "KOMPONEN IV",
+                compTitle: "PENGORGANISASIAN PEMBELAJARAN",
+                id: 18,
+                code: "IV.18",
+                title: "Pendekatan Pengorganisasian",
+                desc: "Menetapkan model penjadwalan (Reguler, Tematik, Terintegrasi, atau Blok) secara eksplisit.",
+                options: [
+                    "Skor 1: Model penjadwalan tidak dijelaskan dalam dokumen KSP.",
+                    "Skor 2: Menyebutkan model penjadwalan tetapi tidak selaras dengan jadwal pelajaran master.",
+                    "Skor 3: Menetapkan salah satu dari 4 pendekatan pengorganisasian pembelajaran secara eksplisit.",
+                    "Skor 4: Dokumen Kalender Pendidikan Sekolah & Jadwal Pelajaran Master tersusun selaras dengan model yang dipilih."
+                ]
+            },
+
+            // KOMPONEN V: PERENCANAAN PEMBELAJARAN
+            {
+                compIndex: 4,
+                compCode: "KOMPONEN V",
+                compTitle: "PERENCANAAN PEMBELAJARAN",
+                id: 19,
+                code: "V.19",
+                title: "Ruang Lingkup Sekolah (ATP)",
+                desc: "Memuat Peta Alur Tujuan Pembelajaran (ATP) dan matriks perencanaan tema kokurikuler 1 tahun.",
+                options: [
+                    "Skor 1: ATP belum tersedia untuk seluruh mata pelajaran Fase D.",
+                    "Skor 2: ATP tersedia tetapi susunannya belum logis atau belum lengkap.",
+                    "Skor 3: Memuat ATP lengkap untuk seluruh mapel Fase D dan matriks kokurikuler 1 tahun.",
+                    "Skor 4: Dokumen ATP seluruh mata pelajaran Fase D tersusun sistematis beserta pemetaan alokasi waktunya."
+                ]
+            },
+            {
+                compIndex: 4,
+                compCode: "KOMPONEN V",
+                compTitle: "PERENCANAAN PEMBELAJARAN",
+                id: 20,
+                code: "V.20",
+                title: "Ruang Lingkup Kelas (Modul)",
+                desc: "Melampirkan sampel Modul Ajar/RPP intrakurikuler dan modul kokurikuler yang memuat asesmen awal-proses-akhir.",
+                options: [
+                    "Skor 1: Modul Ajar/RPP yang dilampirkan tidak memenuhi komponen standar.",
+                    "Skor 2: Melampirkan sampel Modul Ajar tetapi instrumen asesmen belum memadai.",
+                    "Skor 3: Melampirkan sampel Modul Ajar intrakurikuler dan kokurikuler lengkap dengan instrumen asesmen.",
+                    "Skor 4: Sampel Modul Ajar lengkap dengan instrumen rubrik penilaian diagnostik, formatif, dan sumatif."
+                ]
+            },
+            {
+                compIndex: 4,
+                compCode: "KOMPONEN V",
+                compTitle: "PERENCANAAN PEMBELAJARAN",
+                id: 21,
+                code: "V.21",
+                title: "Deep Learning Framework",
+                desc: "Mengintegrasikan suasana Mindful, Meaningful, Joyful dan alur Understanding, Applying, Reflecting.",
+                options: [
+                    "Skor 1: Perencanaan pembelajaran masih berpendekatan transfer materi pasif/hafalan.",
+                    "Skor 2: Menyebutkan istilah Deep Learning tetapi alur skenario pembelajaran belum mencerminkannya.",
+                    "Skor 3: Skenario Modul Ajar mengintegrasikan suasana Mindful, Meaningful, Joyful.",
+                    "Skor 4: Desain skenario pembelajaran dalam Modul Ajar memuat alur Understanding, Applying, Reflecting secara rinci."
+                ]
+            },
+            {
+                compIndex: 4,
+                compCode: "KOMPONEN V",
+                compTitle: "PERENCANAAN PEMBELAJARAN",
+                id: 22,
+                code: "V.22",
+                title: "Pengintegrasian SPAB",
+                desc: "Memuat kompetensi pencegahan bencana, simulasi evakuasi, dan materi keselamatan dalam modul.",
+                options: [
+                    "Skor 1: Belum ada pengintegrasian materi kesiapsiagaan bencana dalam pembelajaran.",
+                    "Skor 2: Materi SPAB tersebut secara sekilas tanpa kegiatan praktik.",
+                    "Skor 3: Mengintegrasikan materi mitigasi bencana ke dalam Modul Ajar mapel relevan/kokurikuler.",
+                    "Skor 4: Modul integrasi SPAB & bukti foto/video/jadwal simulasi evakuasi berkala terlampir lengkap."
+                ]
+            },
+            {
+                compIndex: 4,
+                compCode: "KOMPONEN V",
+                compTitle: "PERENCANAAN PEMBELAJARAN",
+                id: 23,
+                code: "V.23",
+                title: "Pengintegrasian Perubahan Iklim",
+                desc: "Memuat 4 kompetensi iklim (Penyebab, Dampak, Adaptasi, Mitigasi) berprinsip RAMAH.",
+                options: [
+                    "Skor 1: Belum mengintegrasikan isu perubahan iklim.",
+                    "Skor 2: Menguraikan materi iklim tetapi belum mencakup 4 kompetensi iklim.",
+                    "Skor 3: Mengintegrasikan 4 kompetensi iklim ke dalam proyek kokurikuler.",
+                    "Skor 4: Modul proyek/pembelajaran berwawasan lingkungan & iklim memenuhi prinsip RAMAH secara utuh."
+                ]
+            },
+
+            // KOMPONEN VI: EVALUASI, PENDAMPINGAN, DAN PENGEMBANGAN PROFESIONAL
+            {
+                compIndex: 5,
+                compCode: "KOMPONEN VI",
+                compTitle: "EVALUASI, PENDAMPINGAN, DAN PENGEMBANGAN PROFESIONAL",
+                id: 24,
+                code: "VI.24",
+                title: "Mekanisme Evaluasi KSP",
+                desc: "Memuat prosedur evaluasi jangka pendek (semesteran) dan jangka panjang (4–5 tahunan) secara terstruktur.",
+                options: [
+                    "Skor 1: Mekanisme evaluasi KSP belum dirumuskan secara tertulis.",
+                    "Skor 2: Memuat rencana evaluasi tetapi belum membedakan evaluasi semesteran dan 4-5 tahunan.",
+                    "Skor 3: Merumuskan prosedur evaluasi jangka pendek dan jangka panjang secara jelas.",
+                    "Skor 4: POS Evaluasi Kurikulum & lembar kuesioner umpan balik warga sekolah terlampir rinci."
+                ]
+            },
+            {
+                compIndex: 5,
+                compCode: "KOMPONEN VI",
+                compTitle: "EVALUASI, PENDAMPINGAN, DAN PENGEMBANGAN PROFESIONAL",
+                id: 25,
+                code: "VI.25",
+                title: "Pendampingan & Dev Profesional",
+                desc: "Memuat program Coaching, Mentoring, dan Pelatihan guru berbasis kebutuhan PBD.",
+                options: [
+                    "Skor 1: Belum ada program pendampingan dan pengembangan profesional guru.",
+                    "Skor 2: Menyebutkan kegiatan pelatihan guru tetapi tidak didasarkan pada analisis PBD.",
+                    "Skor 3: Memuat jadwal Coaching, Mentoring, dan Pelatihan internal guru.",
+                    "Skor 4: Rencana Program Komunitas Belajar (Kombel) internal sekolah tersusun terstruktur berbasis Rapor Pendidikan."
+                ]
+            },
+            {
+                compIndex: 5,
+                compCode: "KOMPONEN VI",
+                compTitle: "EVALUASI, PENDAMPINGAN, DAN PENGEMBANGAN PROFESIONAL",
+                id: 26,
+                code: "VI.26",
+                title: "Siklus PBD Dalam Rencana Kerja",
+                desc: "Menunjukkan kaitan erat evaluasi KSP dengan RKAS, RKT, dan Kalender Akademik Sekolah.",
+                options: [
+                    "Skor 1: Evaluasi KSP berdiri sendiri tanpa kaitan dengan dokumen perencanaan anggaran.",
+                    "Skor 2: Evaluasi KSP dikaitkan dengan RKT tetapi belum tercermin dalam RKAS.",
+                    "Skor 3: Menunjukkan keterkaitan evaluasi KSP dengan RKT, RKAS, dan Kalender Sekolah.",
+                    "Skor 4: Dokumen RKT, RKAS, dan Lembar Penyelarasan Kebijakan Sekolah saling terkunci terpadu."
+                ]
+            }
+        ];
+
+        // State Aplikasi Evaluasi
+        let scoresState = {};
+        let notesState = {};
+        let radarChartInstance = null;
+        let scoreDistChartInstance = null;
+
+        // Inisialisasi Aplikasi saat DOM Siap
+        document.addEventListener('DOMContentLoaded', () => {
+            initScoresState();
+            renderIndicatorsForm();
+            initCharts();
+            calculateAll();
+            setTodayDate();
+        });
+
+        // Set Tanggal Default
+        function setTodayDate() {
+            const today = new Date().toISOString().split('T')[0];
+            const tglInput = document.getElementById('identitas-tgl-validasi');
+            if (tglInput) tglInput.value = today;
+            updatePrintInfo();
+        }
+
+        // Inisialisasi State Skor Default (Skor 0)
+        function initScoresState() {
+            INDICATORS_DATA.forEach(ind => {
+                scoresState[ind.id] = 0;
+                notesState[ind.id] = ind.options[3]; // Default ke Opsi Skor 4 sebagai placeholder pilihan
+            });
+        }
+
+        // Switch Navigation Tabs
+        function switchTab(tabId) {
+            const tabs = ['dashboard', 'instrumen', 'struktur', 'substansi', 'prosedur'];
+            tabs.forEach(t => {
+                const sec = document.getElementById(`sec-${t}`);
+                const btn = document.getElementById(`tab-${t}`);
+                if (sec) sec.classList.add('hidden');
+                if (btn) {
+                    btn.classList.remove('active', 'bg-white/10', 'text-white');
+                    btn.classList.add('text-slate-400');
+                }
+            });
+
+            const activeSec = document.getElementById(`sec-${tabId}`);
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            if (activeSec) activeSec.classList.remove('hidden');
+            if (activeBtn) activeBtn.classList.add('active');
+
+            if (tabId === 'dashboard') {
+                updateCharts();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Render Form 26 Indikator Validasi
+        function renderIndicatorsForm() {
+            const container = document.getElementById('indicators-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            let currentComp = -1;
+            let compCard = null;
+
+            INDICATORS_DATA.forEach((ind) => {
+                // Jika komponen baru, buat Card Komponen
+                if (ind.compIndex !== currentComp) {
+                    currentComp = ind.compIndex;
+                    compCard = document.createElement('div');
+                    compCard.className = 'bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 print-border';
+                    
+                    const header = document.createElement('div');
+                    header.className = 'pb-3 border-b border-slate-200 flex items-center justify-between';
+                    header.innerHTML = `
+                        <div>
+                            <span class="text-xs font-bold text-brand-600 tracking-wider">${ind.compCode}</span>
+                            <h3 class="font-bold text-slate-900 text-base">${ind.compTitle}</h3>
+                        </div>
+                        <span id="comp-score-badge-${ind.compIndex}" class="px-2.5 py-1 text-xs font-bold bg-slate-100 text-slate-600 rounded-md">
+                            Rerata: 0.0 / 4
+                        </span>
+                    `;
+                    compCard.appendChild(header);
+                    container.appendChild(compCard);
+                }
+
+                // Node Indikator
+                const indNode = document.createElement('div');
+                indNode.className = 'p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3';
+                indNode.innerHTML = `
+                    <div class="flex flex-col md:flex-row md:items-start justify-between gap-2">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 bg-darkslate-800 text-white font-bold text-xs rounded">${ind.code}</span>
+                                <h4 class="font-bold text-xs text-slate-900">${ind.title}</h4>
+                            </div>
+                            <p class="text-xs text-slate-600 leading-relaxed">${ind.desc}</p>
+                        </div>
+                        <!-- Radio Skor 1 - 4 -->
+                        <div class="flex items-center gap-1.5 flex-shrink-0 bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+                            <span class="text-xs font-semibold text-slate-500 mr-1">Skor:</span>
+                            ${[1, 2, 3, 4].map(score => `
+                                <label class="cursor-pointer flex items-center">
+                                    <input type="radio" name="score-${ind.id}" value="${score}" onchange="handleScoreChange(${ind.id}, ${score})" class="sr-only peer">
+                                    <span class="w-7 h-7 text-xs font-bold rounded-md flex items-center justify-center border border-slate-300 peer-checked:bg-brand-600 peer-checked:text-white peer-checked:border-brand-600 hover:bg-slate-100 transition">
+                                        ${score}
+                                    </span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Dropdown Bukti Fisik Operasional Spesifik -->
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Bukti Fisik Operasional / Catatan Verifikator:</label>
+                        <select id="select-note-${ind.id}" onchange="handleNoteChange(${ind.id}, this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-700">
+                            ${ind.options.map((opt, idx) => `
+                                <option value="${opt}" ${idx === 3 ? 'selected' : ''}>
+                                    ${opt}
+                                </option>
+                            `).join('')}
+                        </select>
+                    </div>
+                `;
+
+                compCard.appendChild(indNode);
+            });
+        }
+
+        // Event Handler saat Skor Berubah
+        function handleScoreChange(indId, score) {
+            scoresState[indId] = score;
+            
+            // Otomatis sesuaikan dropdown bukti fisik sesuai skor yang dipilih
+            const ind = INDICATORS_DATA.find(i => i.id === indId);
+            if (ind && ind.options[score - 1]) {
+                const selectEl = document.getElementById(`select-note-${indId}`);
+                if (selectEl) {
+                    selectEl.value = ind.options[score - 1];
+                    notesState[indId] = ind.options[score - 1];
+                }
+            }
+            calculateAll();
+        }
+
+        // Event Handler saat Dropdown Bukti Fisik Berubah
+        function handleNoteChange(indId, val) {
+            notesState[indId] = val;
+        }
+
+        // Simulasi Pengisian Data Cepat
+        function fillSampleData(targetScore) {
+            INDICATORS_DATA.forEach(ind => {
+                scoresState[ind.id] = targetScore;
+                const radio = document.querySelector(`input[name="score-${ind.id}"][value="${targetScore}"]`);
+                if (radio) radio.checked = true;
+
+                const selectEl = document.getElementById(`select-note-${ind.id}`);
+                if (selectEl) {
+                    selectEl.value = ind.options[targetScore - 1];
+                    notesState[ind.id] = ind.options[targetScore - 1];
+                }
+            });
+            calculateAll();
+        }
+
+        // Reset Seluruh Form
+        function resetScores() {
+            INDICATORS_DATA.forEach(ind => {
+                scoresState[ind.id] = 0;
+                const radios = document.querySelectorAll(`input[name="score-${ind.id}"]`);
+                radios.forEach(r => r.checked = false);
+
+                const selectEl = document.getElementById(`select-note-${ind.id}`);
+                if (selectEl) selectEl.selectedIndex = 3;
+            });
+            calculateAll();
+        }
+
+        // Hitung Seluruh Statistik Validasi (Real-Time)
+        function calculateAll() {
+            let totalScore = 0;
+            let answeredCount = 0;
+            let compTotals = [0, 0, 0, 0, 0, 0];
+            let compCounts = [0, 0, 0, 0, 0, 0];
+            let scoreDist = { 1: 0, 2: 0, 3: 0, 4: 0 };
+
+            INDICATORS_DATA.forEach(ind => {
+                const s = scoresState[ind.id] || 0;
+                if (s > 0) {
+                    totalScore += s;
+                    answeredCount++;
+                    scoreDist[s] = (scoreDist[s] || 0) + 1;
+                }
+                compTotals[ind.compIndex] += s;
+                compCounts[ind.compIndex] += 1;
+            });
+
+            // Formula NA = (Sum(S_i) / 104) * 100%
+            const maxScore = 104;
+            const na = ((totalScore / maxScore) * 100).toFixed(1);
+
+            // Update UI Cards
+            document.getElementById('card-na').innerText = `${na}%`;
+            document.getElementById('card-na-bar').style.width = `${na}%`;
+            document.getElementById('card-progress').innerText = `${answeredCount} / 26`;
+
+            // Hitung Status Kelayakan
+            const statusBadge = document.getElementById('card-status');
+            const statusDesc = document.getElementById('card-status-desc');
+            const recomText = document.getElementById('card-recom');
+
+            if (answeredCount === 0) {
+                statusBadge.className = "inline-block px-3 py-1 text-xs font-bold rounded bg-slate-100 text-slate-600";
+                statusBadge.innerText = "Belum Divalidasi";
+                statusDesc.innerText = "Isi instrumen validasi pada tab kedua.";
+                recomText.innerText = "Silakan lengkapi instrumen evaluasi 26 indikator.";
+            } else if (na >= 86.0) {
+                statusBadge.className = "inline-block px-3 py-1 text-xs font-bold rounded bg-emerald-100 text-emerald-800";
+                statusBadge.innerText = "Sangat Layak";
+                statusDesc.innerText = "Dokumen KSP sangat komprehensif dan memiliki keunggulan inovatif.";
+                recomText.innerText = "Dokumen siap ditetapkan Kepala Sekolah dan disahkan Kepala Dinas Pendidikan.";
+            } else if (na >= 71.0) {
+                statusBadge.className = "inline-block px-3 py-1 text-xs font-bold rounded bg-indigo-100 text-brand-800";
+                statusBadge.innerText = "Layak";
+                statusDesc.innerText = "Dokumen KSP memenuhi komponen utama dengan perbaikan kecil.";
+                recomText.innerText = "Dapat disahkan setelah perbaikan minor sesuai catatan verifikator.";
+            } else if (na >= 56.0) {
+                statusBadge.className = "inline-block px-3 py-1 text-xs font-bold rounded bg-amber-100 text-amber-800";
+                statusBadge.innerText = "Cukup Layak";
+                statusDesc.innerText = "Terdapat kekurangan substansial pada PBD atau alur Deep Learning.";
+                recomText.innerText = "Dokumen dikembalikan untuk revisi mayor sebelum pengajuan ulang.";
+            } else {
+                statusBadge.className = "inline-block px-3 py-1 text-xs font-bold rounded bg-rose-100 text-rose-800";
+                statusBadge.innerText = "Belum Layak";
+                statusDesc.innerText = "Dokumen belum memenuhi standar regulasi Kemendikdasmen.";
+                recomText.innerText = "Wajib penyusunan ulang melalui pendampingan coaching oleh Pengawas.";
+            }
+
+            // Update Badge Rerata per Komponen
+            for (let i = 0; i < 6; i++) {
+                const avg = compCounts[i] > 0 ? (compTotals[i] / compCounts[i]).toFixed(1) : "0.0";
+                const badge = document.getElementById(`comp-score-badge-${i}`);
+                if (badge) {
+                    badge.innerText = `Rerata: ${avg} / 4`;
+                }
+            }
+
+            updateCharts(compTotals, compCounts, scoreDist);
+            updatePrintInfo();
+        }
+
+        // Synchronize Identitas ke Tampilan Print
+        function updatePrintInfo() {
+            const namaSekolah = document.getElementById('identitas-nama-sekolah')?.value || '[Nama Sekolah SMP]';
+            const kepalaSekolah = document.getElementById('identitas-kepala-sekolah')?.value || '[Nama Kepala Sekolah]';
+            const pengawas = document.getElementById('identitas-pengawas')?.value || 'Ida Faridlah, M.Ag.';
+            const nipPengawas = document.getElementById('identitas-nip-pengawas')?.value || '19750812 200212 2 001';
+            const tgl = document.getElementById('identitas-tgl-validasi')?.value || new Date().toISOString().split('T')[0];
+
+            const pKepala = document.getElementById('print-kepala-sekolah');
+            const pPengawas = document.getElementById('print-pengawas');
+            const pNip = document.getElementById('print-nip-pengawas');
+            const pTgl = document.getElementById('print-tgl-lokasi');
+
+            if (pKepala) pKepala.innerText = kepalaSekolah;
+            if (pPengawas) pPengawas.innerText = pengawas;
+            if (pNip) pNip.innerText = `NIP. ${nipPengawas}`;
+            if (pTgl) pTgl.innerText = `Diverifikasi pada: ${tgl}`;
+        }
+
+        // Inisialisasi Chart.js Canvas Graphics
+        function initCharts() {
+            // Radar Chart Komponen
+            const ctxRadar = document.getElementById('radarChart')?.getContext('2d');
+            if (ctxRadar) {
+                radarChartInstance = new Chart(ctxRadar, {
+                    type: 'radar',
+                    data: {
+                        labels: [
+                            'Administrasi',
+                            'Karakteristik',
+                            'Visi-Misi-Tujuan',
+                            'Pengorganisasian',
+                            'Perencanaan',
+                            'Evaluasi & Kombel'
+                        ],
+                        datasets: [{
+                            label: 'Capaian Komponen (%)',
+                            data: [0, 0, 0, 0, 0, 0],
+                            backgroundColor: 'rgba(99, 102, 241, 0.25)',
+                            borderColor: '#4f46e5',
+                            pointBackgroundColor: '#4338ca',
+                            pointBorderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: { color: '#e2e8f0' },
+                                grid: { color: '#cbd5e1' },
+                                pointLabels: { font: { size: 10, weight: 'bold' } },
+                                min: 0,
+                                max: 100,
+                                ticks: { stepSize: 25, callback: (v) => v + '%' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+
+            // Bar Chart Distribusi Skor
+            const ctxDist = document.getElementById('scoreDistChart')?.getContext('2d');
+            if (ctxDist) {
+                scoreDistChartInstance = new Chart(ctxDist, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Skor 1 (Kurang)', 'Skor 2 (Cukup)', 'Skor 3 (Baik)', 'Skor 4 (Sangat Baik)'],
+                        datasets: [{
+                            label: 'Jumlah Indikator',
+                            data: [0, 0, 0, 0],
+                            backgroundColor: ['#f43f5e', '#f59e0b', '#6366f1', '#10b981'],
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0 }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Update Grafik secara Dinamis
+        function updateCharts(compTotals, compCounts, scoreDist) {
+            if (!compTotals) {
+                compTotals = [0, 0, 0, 0, 0, 0];
+                compCounts = [3, 6, 4, 5, 5, 3];
+                scoreDist = { 1: 0, 2: 0, 3: 0, 4: 0 };
+                INDICATORS_DATA.forEach(ind => {
+                    const s = scoresState[ind.id] || 0;
+                    compTotals[ind.compIndex] += s;
+                    if (s > 0) scoreDist[s] = (scoreDist[s] || 0) + 1;
+                });
+            }
+
+            // Hitung % Capaian tiap komponen
+            const compPercentages = compTotals.map((tot, idx) => {
+                const maxCompScore = compCounts[idx] * 4;
+                return maxCompScore > 0 ? parseFloat(((tot / maxCompScore) * 100).toFixed(1)) : 0;
+            });
+
+            if (radarChartInstance) {
+                radarChartInstance.data.datasets[0].data = compPercentages;
+                radarChartInstance.update();
+            }
+
+            if (scoreDistChartInstance) {
+                scoreDistChartInstance.data.datasets[0].data = [
+                    scoreDist[1] || 0,
+                    scoreDist[2] || 0,
+                    scoreDist[3] || 0,
+                    scoreDist[4] || 0
+                ];
+                scoreDistChartInstance.update();
+            }
+        }
+    </script>
+</body>
+</html>
